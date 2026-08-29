@@ -6,8 +6,18 @@ call, and the injected-instruction case, then writes the resulting
 hash-chained decision log to the configured artifact backend and marks the
 run complete in the idempotency backend.
 
-Environment variables (all optional; sensible local defaults so this runs
-with zero GCP configuration):
+Environment variables:
+
+    GOOGLE_API_KEY (or GEMINI_API_KEY)   REQUIRED. The allowed calls in the
+                                     batch invoke the real Gemini 3.5 Flash
+                                     summarizer tools. With no key set,
+                                     `agent.tools` raises
+                                     MissingModelCredentials naming the
+                                     variable; it never substitutes a
+                                     fabricated summary. For a model-free
+                                     run use `python demo.py` or
+                                     `python demo_local.py`, which name the
+                                     offline tool variants explicitly.
 
     SOVEREIGN_BACKEND=local|gcp     default "local"
     SOVEREIGN_GCS_BUCKET            required if SOVEREIGN_BACKEND=gcp

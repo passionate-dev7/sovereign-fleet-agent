@@ -1,6 +1,20 @@
-"""Local demo script: `make demo` or `python demo.py`.
+"""OFFLINE DEMO. `make demo` or `python demo.py`.
 
-Runs the exact sequence DEMO_SCRIPT.md narrates, with no GCP dependency:
+This is the short offline demo: no GCP, no API key, no model call. The
+policy engine, gateway, registry and hash-chained decision log are the
+real production modules; the only substitution is the sub-agent tool
+BODY, which uses `agent.tools.offline_summarize_record` (a deterministic
+marker string) instead of `summarize_record` (the real Gemini 3.5 Flash
+call). That substitution is named explicitly on the import line below,
+never defaulted to.
+
+The substitution is sound for what this demo proves: the claim is about
+WHETHER a tool function runs under a given policy verdict, not about the
+quality of its output. `demo_local.py` is the longer version of the same
+story with idempotency and tamper-detection acts; `job/main.py` is the
+production entrypoint and it binds the real Gemini-backed tools.
+
+Sequence, matching DEMO_SCRIPT.md:
     1. Register the fleet (declared region + service account per sub-agent).
     2. Allowed call: EU record through EU summarizer.
     3. Denied call: same EU record through US summarizer.
@@ -14,7 +28,7 @@ from __future__ import annotations
 
 import json
 
-from agent.tools import summarize_record
+from agent.tools import offline_summarize_record as summarize_record
 from audit.decision_log import DecisionLog
 from gateway.tool_gateway import DataRecord, ToolGateway
 from injection.injected_record import INJECTED_RECORD

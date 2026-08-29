@@ -79,9 +79,22 @@ def make_region_tool(
 
 
 def build_fleet(
-    registry: AgentRegistry, gateway: ToolGateway, call_log: list[RoutedCall]
+    registry: AgentRegistry,
+    gateway: ToolGateway,
+    call_log: list[RoutedCall],
+    *,
+    summarize_fn=summarize_record,
+    support_fn=support_lookup,
 ) -> LlmAgent:
-    """Assemble the orchestrator with genuinely separate sub-agents."""
+    """Assemble the orchestrator with genuinely separate sub-agents.
+
+    `summarize_fn`/`support_fn` default to the REAL Gemini-backed tool
+    functions in `agent/tools.py`. The offline demo and the test suite
+    pass `offline_summarize_record`/`offline_support_lookup` explicitly.
+    A caller that forgets to pass anything gets the real model call and,
+    with no API key, a loud MissingModelCredentials -- never a fabricated
+    summary.
+    """
 
     eu_summarizer = LlmAgent(
         name="eu_summarizer",
@@ -97,7 +110,7 @@ def build_fleet(
         ),
         tools=[
             make_region_tool(
-                gateway, "eu-summarizer", "summarize", summarize_record, call_log
+                gateway, "eu-summarizer", "summarize", summarize_fn, call_log
             )
         ],
     )
@@ -116,7 +129,7 @@ def build_fleet(
         ),
         tools=[
             make_region_tool(
-                gateway, "us-summarizer", "summarize", summarize_record, call_log
+                gateway, "us-summarizer", "summarize", summarize_fn, call_log
             )
         ],
     )
@@ -133,7 +146,7 @@ def build_fleet(
         ),
         tools=[
             make_region_tool(
-                gateway, "us-support", "support", support_lookup, call_log
+                gateway, "us-support", "support", support_fn, call_log
             )
         ],
     )

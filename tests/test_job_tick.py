@@ -18,7 +18,7 @@ from gateway.tool_gateway import DataRecord, ToolGateway
 from job.tick import BatchCall, run_job_tick
 from policy.engine import DEFAULT_ENGINE
 from registry.agent_registry import bootstrap_default_registry
-from agent.tools import summarize_record
+from agent.tools import offline_summarize_record as summarize_record
 
 
 def _make_gateway():

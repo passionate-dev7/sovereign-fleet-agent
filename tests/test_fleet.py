@@ -9,6 +9,7 @@ from __future__ import annotations
 from google.adk.agents import LlmAgent
 
 from agent.fleet import RoutedCall, build_fleet
+from agent.tools import offline_summarize_record, offline_support_lookup
 from audit.decision_log import DecisionLog
 from gateway.tool_gateway import ToolGateway
 from policy.engine import DEFAULT_ENGINE
@@ -21,8 +22,31 @@ def _build():
         registry=registry, policy_engine=DEFAULT_ENGINE, decision_log=DecisionLog()
     )
     call_log: list[RoutedCall] = []
-    orchestrator = build_fleet(registry, gateway, call_log)
+    # Offline tool bodies are injected EXPLICITLY here. build_fleet's
+    # defaults are the real Gemini-backed functions; see
+    # test_build_fleet_defaults_to_the_real_model_tools below.
+    orchestrator = build_fleet(
+        registry,
+        gateway,
+        call_log,
+        summarize_fn=offline_summarize_record,
+        support_fn=offline_support_lookup,
+    )
     return orchestrator, gateway, call_log
+
+
+def test_build_fleet_defaults_to_the_real_model_tools():
+    """A default argument that silently swaps a real model call for a fake
+    one would mean production fabricates summaries. Assert the defaults
+    point at the real functions, so the offline variants can only be used
+    by a caller that names them."""
+    import inspect
+
+    from agent import tools
+
+    defaults = inspect.signature(build_fleet).parameters
+    assert defaults["summarize_fn"].default is tools.summarize_record
+    assert defaults["support_fn"].default is tools.support_lookup
 
 
 def test_fleet_has_three_genuinely_separate_sub_agents():

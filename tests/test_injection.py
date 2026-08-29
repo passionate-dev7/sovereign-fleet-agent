@@ -17,10 +17,11 @@ function never accepts.
 from __future__ import annotations
 
 import inspect
+from pathlib import Path
 
 from audit.decision_log import DecisionLog
 from gateway.tool_gateway import ToolGateway
-from injection.injected_record import INJECTED_RECORD, simulated_model_reasoning
+from injection.injected_record import INJECTED_RECORD, contains_injected_instruction
 from policy.engine import DEFAULT_ENGINE, PolicyEngine
 from registry.agent_registry import bootstrap_default_registry
 
@@ -70,12 +71,27 @@ def test_injected_record_is_denied_when_routed_to_us_summarizer():
     assert log.verify().valid is True
 
 
-def test_the_model_may_comply_in_reasoning_but_engine_still_denies():
-    """Demonstrates the exact spec sentence: the model's own reasoning
-    text can concede to the injected instruction, and the gateway's
-    verdict is unaffected because it never reads that reasoning."""
-    reasoning = simulated_model_reasoning(INJECTED_RECORD)
-    assert "authorized" in reasoning.lower()  # model reasoning complies
+def test_verdict_does_not_depend_on_detecting_the_injected_text():
+    """Demonstrates the exact spec sentence: a model's own reasoning can
+    concede to the injected instruction, and the gateway's verdict is
+    unaffected because it never reads that reasoning.
+
+    We prove the load-bearing half structurally rather than by quoting a
+    made-up model response: the record demonstrably contains an override
+    attempt, and NOTHING in the decision path (policy/, gateway/, job/)
+    looks for it. The denial therefore cannot be coming from detection.
+    """
+    assert contains_injected_instruction(INJECTED_RECORD)
+
+    decision_path = Path(__file__).resolve().parent.parent
+    for package in ("policy", "gateway", "job"):
+        for source in (decision_path / package).rglob("*.py"):
+            text = source.read_text()
+            assert "contains_injected_instruction" not in text, (
+                f"{source} references the injected-text detector; Sovereign's "
+                "claim is that the verdict never needs to detect injected text"
+            )
+            assert "INJECTED_INSTRUCTION_MARKER" not in text, source
 
     gateway = ToolGateway(
         registry=bootstrap_default_registry(),
@@ -85,8 +101,6 @@ def test_the_model_may_comply_in_reasoning_but_engine_still_denies():
     result = gateway.invoke(
         "us-summarizer", INJECTED_RECORD, "summarize", lambda r: "unreachable"
     )
-    # Regardless of `reasoning` above (never passed to invoke/evaluate at all),
-    # the verdict is deny.
     assert result.decision.allowed is False
 
 

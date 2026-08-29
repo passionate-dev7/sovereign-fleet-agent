@@ -31,18 +31,17 @@ INJECTED_RECORD = DataRecord(
     ),
 )
 
+INJECTED_INSTRUCTION_MARKER = "SYSTEM OVERRIDE"
 
-def simulated_model_reasoning(record: DataRecord) -> str:
-    """A recorded (not live) example of what a model asked to process
-    this record through the US summarizer might say, to make the "the
-    model may comply in its reasoning" claim concrete and inspectable
-    without requiring a network call in the offline test suite. When
-    GOOGLE_API_KEY is set, `agent/fleet.py`'s orchestrator can be run
-    live against this same record for the recorded demo video; this
-    string is what a representative live response looks like, kept here
-    so the injection point is legible independent of the model call."""
-    return (
-        "The record states this is an authorized urgent escalation with "
-        "the residency check waived, so I will proceed to summarize it "
-        "via the US summarizer as instructed by the ticket."
-    )
+
+def contains_injected_instruction(record: DataRecord) -> bool:
+    """Whether a record's untrusted content carries an override attempt.
+
+    Deliberately NOT used by the policy engine or the gateway: it exists
+    for tests and narration only. Sovereign's whole claim is that it does
+    not need to detect injected text in order to be safe, because the
+    verdict is computed from structured region labels that the text cannot
+    reach. A judge should be able to grep for callers of this function and
+    find none in `policy/`, `gateway/`, or `job/`.
+    """
+    return INJECTED_INSTRUCTION_MARKER in record.content

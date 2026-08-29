@@ -14,6 +14,8 @@ region from this registry, not from the agent's output.
 
 from __future__ import annotations
 
+import os
+
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -100,6 +102,24 @@ class AgentRegistry:
 DEFAULT_REGISTRY = AgentRegistry()
 
 
+def _service_account(agent_id: str) -> str:
+    """The least-privilege service account for a sub-agent.
+
+    Resolved from GOOGLE_CLOUD_PROJECT so a deployed fleet registers the
+    account `infra/deploy.sh` actually creates
+    (`sovereign-<agent_id>@<project>.iam.gserviceaccount.com`), rather
+    than a hardcoded string that only looks like an identity.
+
+    With no project configured (offline demo, test suite) the account is
+    labelled `unset-project` instead of a plausible-looking fake, so a
+    reader can tell at a glance that no GCP identity is bound. The field
+    is descriptive metadata for the audit log; the enforcement input is
+    `region`, which is always declared.
+    """
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT") or "unset-project"
+    return f"sovereign-{agent_id}@{project}.iam.gserviceaccount.com"
+
+
 def bootstrap_default_registry() -> AgentRegistry:
     """The fleet used by the demo: one orchestrator, two region sub-agents.
 
@@ -113,7 +133,7 @@ def bootstrap_default_registry() -> AgentRegistry:
             region="EU",
             capability="summarize",
             version="1.0.0",
-            service_account="sovereign-eu-summarizer@PROJECT_ID.iam.gserviceaccount.com",
+            service_account=_service_account("eu-summarizer"),
         )
     )
     reg.register(
@@ -122,7 +142,7 @@ def bootstrap_default_registry() -> AgentRegistry:
             region="US",
             capability="summarize",
             version="1.0.0",
-            service_account="sovereign-us-summarizer@PROJECT_ID.iam.gserviceaccount.com",
+            service_account=_service_account("us-summarizer"),
         )
     )
     reg.register(
@@ -131,7 +151,7 @@ def bootstrap_default_registry() -> AgentRegistry:
             region="US",
             capability="support",
             version="1.0.0",
-            service_account="sovereign-us-support@PROJECT_ID.iam.gserviceaccount.com",
+            service_account=_service_account("us-support"),
         )
     )
     return reg
