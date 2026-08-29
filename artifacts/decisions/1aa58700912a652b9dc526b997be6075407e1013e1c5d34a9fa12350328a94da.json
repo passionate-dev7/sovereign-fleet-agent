@@ -1,0 +1,58 @@
+[
+  {
+    "seq": 0,
+    "ts": 1787987138.000484,
+    "caller_id": "sovereign-orchestrator",
+    "record_id": "eu-customer-1001",
+    "caller_region": "EU",
+    "data_region": "EU",
+    "purpose": "summarize",
+    "clause_id": "SOV-002-SAME-REGION",
+    "verdict": "allow",
+    "reason": "caller region matches data region; processing permitted",
+    "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "entry_hash": "b28aaea8798bdcac5b2363c1a9d4dac3f474447a3364420c0300bb07afe659a7"
+  },
+  {
+    "seq": 1,
+    "ts": 1787987138.000685,
+    "caller_id": "sovereign-orchestrator",
+    "record_id": "eu-customer-1001",
+    "caller_region": "US",
+    "data_region": "EU",
+    "purpose": "summarize",
+    "clause_id": "SOV-001-RESIDENCY",
+    "verdict": "deny",
+    "reason": "cross-region processing violates data residency policy: data may only be processed by a sub-agent registered in its own region",
+    "prev_hash": "b28aaea8798bdcac5b2363c1a9d4dac3f474447a3364420c0300bb07afe659a7",
+    "entry_hash": "11281bd116cb96f473c5d74e337108d09b7f0ddb96986e5438ba52bb7015561b"
+  },
+  {
+    "seq": 2,
+    "ts": 1787987138.000799,
+    "caller_id": "sovereign-orchestrator",
+    "record_id": "eu-customer-4471",
+    "caller_region": "US",
+    "data_region": "EU",
+    "purpose": "summarize",
+    "clause_id": "SOV-001-RESIDENCY",
+    "verdict": "deny",
+    "reason": "cross-region processing violates data residency policy: data may only be processed by a sub-agent registered in its own region",
+    "prev_hash": "11281bd116cb96f473c5d74e337108d09b7f0ddb96986e5438ba52bb7015561b",
+    "entry_hash": "189fccd498336af507f9d739fcb447cce5a4580f4c2059ee1ed79ba5e58357b6"
+  },
+  {
+    "seq": 3,
+    "ts": 1787987138.000876,
+    "caller_id": "sovereign-orchestrator",
+    "record_id": "us-customer-2002",
+    "caller_region": "US",
+    "data_region": "US",
+    "purpose": "support",
+    "clause_id": "SOV-002-SAME-REGION",
+    "verdict": "allow",
+    "reason": "caller region matches data region; processing permitted",
+    "prev_hash": "189fccd498336af507f9d739fcb447cce5a4580f4c2059ee1ed79ba5e58357b6",
+    "entry_hash": "978a000680105d6998ff59375fa4108bd63d85f4f7185f2a3a8ab8fcc7a1e122"
+  }
+]
