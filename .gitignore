@@ -2,6 +2,22 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
-.env
+venv/
+*.egg-info/
 *.log
 demo_artifacts/
+
+# Credentials. Nothing here should ever be committed: the deploy path uses
+# Application Default Credentials and the job's own service account, so a
+# key file in the tree means something went wrong.
+.env
+.env.*
+*-key.json
+*credentials*.json
+service-account*.json
+*.pem
+*.p8
+
+# Filming aid: break_validator.sh leaves this next to whatever it breaks.
+# Committing one means a disabled validator shipped.
+*.demo-break-backup
