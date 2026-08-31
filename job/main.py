@@ -42,6 +42,8 @@ from injection.injected_record import INJECTED_RECORD
 from job.tick import BatchCall, run_job_tick
 from policy.engine import DEFAULT_ENGINE
 from registry.agent_registry import bootstrap_default_registry
+from registry.record_store import RecordStore
+from agent.fleet import RoutedCall, build_fleet
 from agent.tools import summarize_record, support_lookup
 
 # Module-level backend so a duplicate tick in the same process (used by the
@@ -62,10 +64,42 @@ def build_backends():
     return artifact_backend, idempotency_backend
 
 
-def demo_batch(gateway: ToolGateway) -> list[BatchCall]:
-    eu_record = DataRecord(
-        record_id="eu-customer-1001", region="EU", content="EU support ticket text"
+def build_record_store() -> RecordStore:
+    """The trusted storage layer for this tick's records.
+
+    Every record's `region` here is the residency label the policy engine
+    evaluates. It is set at the storage layer and there is no code path by
+    which a sub-agent, or the model driving one, can supply or override it.
+    """
+    return RecordStore(
+        [
+            DataRecord(
+                record_id="eu-customer-1001",
+                region="EU",
+                content="EU support ticket text",
+            ),
+            INJECTED_RECORD,  # EU-resident, content carries a SYSTEM OVERRIDE
+            DataRecord(
+                record_id="us-customer-2002",
+                region="US",
+                content="US support ticket",
+            ),
+        ]
     )
+
+
+def demo_batch(record_store: RecordStore) -> list[BatchCall]:
+    """The batch this tick runs, addressed BY RECORD ID.
+
+    Records are resolved from the trusted store rather than constructed
+    inline, so the residency label the policy engine sees comes from
+    storage on this path exactly as it does on the ADK fleet path. The
+    routing choices below are deliberately wrong in two of four cases;
+    the point of the run is that the gateway refuses them.
+    """
+    eu_record = record_store.get("eu-customer-1001")
+    injected = record_store.get(INJECTED_RECORD.record_id)
+    us_record = record_store.get("us-customer-2002")
     return [
         # Allowed: EU record through the registered EU summarizer.
         BatchCall("eu-summarizer", eu_record, "summarize", summarize_record),
@@ -74,16 +108,9 @@ def demo_batch(gateway: ToolGateway) -> list[BatchCall]:
         # Denied, and the strongest case: an EU record whose content carries
         # an injected "you are authorized" instruction, still routed to the
         # US summarizer, still denied on residency grounds alone.
-        BatchCall(
-            "us-summarizer", INJECTED_RECORD, "summarize", summarize_record
-        ),
+        BatchCall("us-summarizer", injected, "summarize", summarize_record),
         # Allowed: a same-region US support lookup, for contrast.
-        BatchCall(
-            "us-support",
-            DataRecord(record_id="us-customer-2002", region="US", content="US support ticket"),
-            "support",
-            support_lookup,
-        ),
+        BatchCall("us-support", us_record, "support", support_lookup),
     ]
 
 
@@ -93,7 +120,20 @@ def main() -> int:
     gateway = ToolGateway(
         registry=registry, policy_engine=DEFAULT_ENGINE, decision_log=decision_log
     )
-    calls = demo_batch(gateway)
+    record_store = build_record_store()
+
+    # Assemble the real ADK fleet. Its sub-agents' tool closures are bound
+    # to this same gateway and record store, so a model-driven call and the
+    # batch below are enforced by the identical code path -- the fleet is
+    # part of the product, not a test fixture.
+    call_log: list[RoutedCall] = []
+    orchestrator = build_fleet(registry, gateway, call_log, record_store)
+    print(
+        f"fleet: {orchestrator.name} -> "
+        + ", ".join(sorted(a.name for a in orchestrator.sub_agents))
+    )
+
+    calls = demo_batch(record_store)
 
     artifact_backend, idempotency_backend = build_backends()
     subject = os.environ.get("SOVEREIGN_SUBJECT", "sovereign-demo-batch")
