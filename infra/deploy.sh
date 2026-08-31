@@ -60,13 +60,13 @@ gcloud artifacts repositories create "${IMAGE_REPO}" \
   --repository-format=docker --quiet
 
 echo "-- Building and pushing image"
-REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"  # this repo root; agentspine is vendored in-repo
 gcloud builds submit "${REPO_ROOT}" \
   --project "${GCP_PROJECT}" --tag "${IMAGE_URI}" \
   --config /dev/stdin --quiet <<EOF
 steps:
   - name: gcr.io/cloud-builders/docker
-    args: ["build", "-f", "projects/sovereign/Dockerfile", "-t", "${IMAGE_URI}", "."]
+    args: ["build", "-f", "Dockerfile", "-t", "${IMAGE_URI}", "."]
 images: ["${IMAGE_URI}"]
 EOF
 
