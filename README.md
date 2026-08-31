@@ -113,9 +113,12 @@ image also picks up `projects/shared`), a GCS bucket for
 `roles/storage.objectCreator` on the one decision-log bucket, no shared
 key across agents), two Cloud Run Jobs (one per region), and a Cloud
 Scheduler job per region triggering its Cloud Run Job every 2 minutes.
-Cloud Trace export happens automatically once the OTel GCP exporter
-(`opentelemetry-exporter-gcp-trace`, in `requirements.txt`) is configured
-in the running container.
+Cloud Trace export is NOT wired up in this build. Spans are emitted at
+every policy decision, but with no exporter registered they go to
+OpenTelemetry's default no-op provider. `opentelemetry-exporter-gcp-trace`
+is in `requirements.txt`; registering it in the container is the remaining
+step. We say this plainly rather than listing Cloud Trace as a technology
+we used (see `LIMITATIONS.md`).
 
 ## Tearing down
 
