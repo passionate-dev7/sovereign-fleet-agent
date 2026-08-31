@@ -19,14 +19,42 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from opentelemetry import trace
-from opentelemetry.trace import Status, StatusCode
+try:
+    from opentelemetry import trace
+    from opentelemetry.trace import Status, StatusCode
+
+    tracer = trace.get_tracer("sovereign.gateway")
+except ImportError:  # pragma: no cover - exercised only without the dep
+    # OTel is optional the same way agentspine.tracing treats it: the gateway
+    # must still veto cross-region calls with no exporter and no OTel installed
+    # at all (e.g. the browser 'Try it out' function). Fall back to a no-op
+    # tracer so the policy path is byte-for-byte identical either way.
+    import contextlib
+
+    class _NoopSpan:
+        def set_attribute(self, *_a, **_k):
+            pass
+
+        def set_status(self, *_a, **_k):
+            pass
+
+    class _NoopTracer:
+        @contextlib.contextmanager
+        def start_as_current_span(self, *_a, **_k):
+            yield _NoopSpan()
+
+    class StatusCode:  # noqa: N801 - mirrors the OTel enum surface used below
+        OK = "OK"
+        ERROR = "ERROR"
+
+    def Status(_code):  # noqa: N802 - mirrors the OTel callable used below
+        return _code
+
+    tracer = _NoopTracer()
 
 from audit.decision_log import DecisionLog
 from policy.engine import PolicyDecision, PolicyEngine, ToolCallRequest
 from registry.agent_registry import AgentRegistry, UnknownAgentError
-
-tracer = trace.get_tracer("sovereign.gateway")
 
 
 @dataclass(frozen=True)

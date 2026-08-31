@@ -6,8 +6,8 @@ WORKDIR /app
 # The repo vendors agentspine, so the image builds from a clean clone of just
 # this repo, with no sibling directory and no separate publish step.
 
-COPY requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-cloudrun.txt ./requirements-cloudrun.txt
+RUN pip install --no-cache-dir -r requirements-cloudrun.txt
 
 COPY . /app
 

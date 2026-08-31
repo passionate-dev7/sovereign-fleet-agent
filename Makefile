@@ -34,8 +34,8 @@ red-green:
 
 deploy:
 	@test -n "$(PROJECT_ID)" || { echo "usage: make deploy PROJECT_ID=<gcp-project>"; exit 1; }
-	PROJECT_ID=$(PROJECT_ID) GCP_PROJECT=$(PROJECT_ID) GCP_REGION_US=$(GCP_REGION) GCP_REGION_EU=$(GCP_REGION_EU) bash infra/deploy.sh
+	PROJECT_ID=$(PROJECT_ID) REGION=$(GCP_REGION) REGION_EU=$(GCP_REGION_EU) bash ../../infra/deploy_sovereign.sh
 
 teardown:
 	@test -n "$(PROJECT_ID)" || { echo "usage: make teardown PROJECT_ID=<gcp-project>"; exit 1; }
-	PROJECT_ID=$(PROJECT_ID) GCP_PROJECT=$(PROJECT_ID) GCP_REGION_US=$(GCP_REGION) GCP_REGION_EU=$(GCP_REGION_EU) bash infra/teardown.sh
+	PROJECT_ID=$(PROJECT_ID) REGION=$(GCP_REGION) REGION_B=$(GCP_REGION_EU) PROJECTS=sovereign bash ../../infra/teardown.sh

@@ -1,0 +1,17 @@
+# Keep the Vercel function bundle small: only api/index.py and the project
+# packages it imports need to ship. Everything below is either heavy, secret-
+# adjacent, or irrelevant to the hosted 'Try it out' demo.
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+tests
+demo
+artifacts
+demo_artifacts
+infra
+Dockerfile
+requirements-cloudrun.txt
+*.demo-break-backup

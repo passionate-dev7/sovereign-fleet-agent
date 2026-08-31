@@ -1,14 +1,14 @@
-# Sovereign runtime + test deps, pinned to the exact versions the offline test
-# suite passes against, so the container and a clean clone cannot drift from
-# what we verified locally.
+# Vercel 'Try it out' function deps (api/index.py runs the offline demo).
 #
-# `pip install -e .` reads these same pins from pyproject.toml. This file is
-# kept for the Cloud Run Job image and for `pip install -r requirements.txt`.
-google-adk==2.8.0
-google-genai==2.20.0
-google-cloud-firestore==2.29.0
-google-cloud-storage==3.13.1
+# The browser demo path (demo_local.py -> policy engine, registry, gateway,
+# decision log, agentspine tick) imports nothing outside the stdlib except an
+# optional OpenTelemetry span in gateway/tool_gateway.py, which now degrades to
+# a no-op tracer when OTel is absent. We install only opentelemetry here so the
+# hosted demo shows the exact same spans the local run does, and nothing else.
+#
+# The full Cloud Run Job image (Gemini via google-adk, Firestore, GCS, Cloud
+# Trace exporter) installs from requirements-cloudrun.txt instead -- see the
+# Dockerfile. Keeping those 200MB+ of wheels out of the Vercel function is what
+# keeps the deploy under the serverless size limit and fast to build.
 opentelemetry-api==1.42.1
 opentelemetry-sdk==1.42.1
-opentelemetry-exporter-gcp-trace==1.15.0
-pytest==9.1.1

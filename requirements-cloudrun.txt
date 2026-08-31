@@ -1,0 +1,14 @@
+# Sovereign runtime + test deps, pinned to the exact versions the offline test
+# suite passes against, so the container and a clean clone cannot drift from
+# what we verified locally.
+#
+# `pip install -e .` reads these same pins from pyproject.toml. This file is
+# kept for the Cloud Run Job image and for `pip install -r requirements.txt`.
+google-adk==2.8.0
+google-genai==2.20.0
+google-cloud-firestore==2.29.0
+google-cloud-storage==3.13.1
+opentelemetry-api==1.42.1
+opentelemetry-sdk==1.42.1
+opentelemetry-exporter-gcp-trace==1.15.0
+pytest==9.1.1
