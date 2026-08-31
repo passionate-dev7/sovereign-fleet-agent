@@ -1,5 +1,8 @@
 # Sovereign
 
+**Try it out (no install): https://sovereign-fleet-agent.vercel.app** runs the
+offline end-to-end demo in your browser and shows the cross-region DENY live.
+
 An agent gateway that refuses to let a sub-agent touch data in the wrong
 jurisdiction, and proves the refusal in an OpenTelemetry trace and a
 hash-chained decision log.
