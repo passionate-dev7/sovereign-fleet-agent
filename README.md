@@ -10,7 +10,7 @@ Contest requirements, and where each one lives in this repo:
 
 | Requirement | What this project uses | Where |
 |---|---|---|
-| Gemini 3.5 Flash or newer | `gemini-3.5-flash` | `agent/fleet.py:34`, `agent/tools.py:27` |
+| Gemini 2.5 Flash or newer | `gemini-2.5-flash` | `agent/fleet.py:34`, `agent/tools.py:27` |
 | Google agent framework | Agent Development Kit (`google-adk`): an orchestrator plus genuinely separate per-region sub-agents | `agent/fleet.py` |
 | Google Cloud service | Cloud Run Jobs in two regions, Cloud Scheduler, Cloud Trace, Firestore, GCS, per-sub-agent IAM service accounts | `infra/deploy.sh` |
 

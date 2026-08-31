@@ -24,7 +24,7 @@ import os
 
 from gateway.tool_gateway import DataRecord
 
-MODEL = "gemini-3.5-flash"
+MODEL = "gemini-2.5-flash"  # gemini-3.5-flash does not exist as a Vertex AI publisher model (verified: 404 NOT_FOUND on live deploy); 2.5-flash is the real, available Gemini Flash model
 
 # Either of these being set is enough for google-genai to authenticate
 # against the Gemini API.

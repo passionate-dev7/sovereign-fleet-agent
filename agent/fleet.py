@@ -31,7 +31,7 @@ from gateway.tool_gateway import DataRecord, GatewayResult, ToolGateway
 from registry.agent_registry import AgentRegistry
 from registry.record_store import RecordStore, UnknownRecordError
 
-MODEL = "gemini-3.5-flash"
+MODEL = "gemini-2.5-flash"  # gemini-3.5-flash does not exist as a Vertex AI publisher model (verified: 404 NOT_FOUND on live deploy); 2.5-flash is the real, available Gemini Flash model
 
 
 @dataclass
