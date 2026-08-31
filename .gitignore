@@ -21,3 +21,4 @@ service-account*.json
 # Filming aid: break_validator.sh leaves this next to whatever it breaks.
 # Committing one means a disabled validator shipped.
 *.demo-break-backup
+.vercel
