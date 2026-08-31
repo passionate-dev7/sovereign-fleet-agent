@@ -10,7 +10,7 @@ Contest requirements, and where each one lives in this repo:
 
 | Requirement | What this project uses | Where |
 |---|---|---|
-| Gemini 2.5 Flash or newer | `gemini-2.5-flash` | `agent/fleet.py:34`, `agent/tools.py:27` |
+| Gemini 2.5 Flash or newer | `gemini-2.5-flash` | `agent/fleet.py:34`, `agent/tools.py:44` |
 | Google agent framework | Agent Development Kit (`google-adk`): an orchestrator plus genuinely separate per-region sub-agents | `agent/fleet.py` |
 | Google Cloud service | Cloud Run Jobs in two regions, Cloud Scheduler, Cloud Trace, Firestore, GCS, per-sub-agent IAM service accounts | `infra/deploy.sh` |
 
@@ -42,7 +42,7 @@ PY=.venv/bin/python make demo
 spine that ships inside this repo. There is no sibling directory to clone
 and no `PYTHONPATH` to export.
 
-Expected output: **45 passing tests**, and a demo that exits 0. Both run
+Expected output: **58 passing tests**, and a demo that exits 0. Both run
 fully offline, with no network calls, no GCP credentials, and no API key.
 If either needs one, that is a bug in this project.
 
@@ -52,10 +52,11 @@ If either needs one, that is a bug in this project.
 make test
 ```
 
-The full offline suite (45 tests) across the policy engine, the registry,
+The full offline suite (58 tests) across the policy engine, the registry,
 the gateway, the decision log, the ADK fleet, the prompt-injection
-scenario, and the idempotent job tick, including the denial and
-tamper-detection tests.
+scenario, the idempotent job tick, the two model-auth modes in
+`agent/tools.py`, and the Cloud Trace exporter wiring in
+`job/tracing_setup.py`, including the denial and tamper-detection tests.
 
 ```bash
 make demo
@@ -113,20 +114,34 @@ part: the engine fails closed, so no matched clause means
 `SOV-999-DEFAULT-DENY`. The only honest break is to make the residency
 clause actively allow.
 
-**RED (observed):** with the clause inverted, `make test` drops from 45
-passed to 30 passed and 15 failed, and `make demo-short` step 3 prints
+**RED (observed):** with the clause inverted, `make test` drops from 58
+passed to 43 passed and 15 failed, and `make demo-short` step 3 prints
 `[ALLOWED]` for the EU record routed to the US summarizer, with
 `tool_result` showing the actual EU customer content was processed. That
 is the silent cross-region leak the policy engine exists to prevent.
 Step 4's injected-instruction record is processed too.
 
-**GREEN (observed, after restoring the line):** `make test` returns to 45
+**GREEN (observed, after restoring the line):** `make test` returns to 58
 passed and step 3 prints `[DENIED]` again with `tool_result` absent.
 
 ## Deploying to Google Cloud
 
+Two model-credential modes, matching Tabclose/Refill and the real deploy
+script (`../../infra/deploy_sovereign.sh`):
+
 ```bash
-export GEMINI_API_KEY=your-key
+# Vertex AI + ADC (no API key), the real deploy's mode:
+export GOOGLE_GENAI_USE_VERTEXAI=TRUE
+export GOOGLE_CLOUD_PROJECT=your-project-id
+gcloud auth application-default login   # local ADC; the Cloud Run Job uses its own service account instead
+make job
+
+# or Gemini Developer API + key, for a quick local run with no GCP project:
+export GOOGLE_API_KEY=your-key
+make job
+```
+
+```bash
 make deploy PROJECT_ID=your-project-id
 make teardown PROJECT_ID=your-project-id
 ```
@@ -136,21 +151,34 @@ image built from this repo, a GCS bucket for `decisions/<run_id>.json`,
 three per-sub-agent service accounts (`sovereign-eu-summarizer`,
 `sovereign-us-summarizer`, `sovereign-us-support`) each scoped to only the
 roles it needs, with no shared key across agents, two Cloud Run Jobs (one
-per region), and a Cloud Scheduler job per region.
+per region), and a Cloud Scheduler job per region. `../../infra/deploy_sovereign.sh`
+is the version actually exercised in the live Aug 31 deploy (see
+`LIMITATIONS.md`); it sets `GOOGLE_GENAI_USE_VERTEXAI=TRUE` in the job's
+own env, so the deployed container never sees an API key at all.
 
 `make teardown` deletes the Scheduler jobs, the Cloud Run Jobs, and the
 per-sub-agent service accounts. The decision-log bucket is left intact for
 audit purposes, and the teardown script prints the exact command to remove
 it.
 
-**Honest status:** the deploy and teardown scripts are written and syntax
-checked, but they have not been run end to end against a live billed GCP
-project. Cloud Trace export requires the
-`opentelemetry-exporter-gcp-trace` package to be installed and configured
-in the running container; the tracing helper in `agentspine/tracing.py`
-no-ops safely when no exporter is present, which is how the offline suite
-runs without one. Everything under "Quick start" has been verified from a
-clean clone. See `LIMITATIONS.md`.
+**Cloud Trace export:** `job/tracing_setup.py` registers a real
+`CloudTraceSpanExporter` when `SOVEREIGN_BACKEND=gcp` (the real deploy's
+setting) or `SOVEREIGN_TRACE_EXPORT=1`, and fails closed to the existing
+no-op behavior (`agentspine/tracing.py`'s default) if ADC/the Trace API
+aren't reachable, so a job never crashes because tracing couldn't connect.
+Verified live in this build environment using this repo's own real GCP
+project and real ADC (no Cloud Run deploy performed): a
+real `job/main.py` tick, with both Vertex-mode model calls and the Trace
+exporter forced on, produced spans (`sovereign.batch_call`,
+`sovereign.tool_call.us-support`, `sovereign.write_artifact`,
+`sovereign.complete`) that were then read back from Cloud Trace via
+`google.cloud.trace_v1.TraceServiceClient.list_traces()`, confirming the
+exporter path genuinely reaches Cloud Trace end to end. What was NOT
+verified: the exporter running inside an actual deployed Cloud Run Job
+container under its own service account, which is the one difference
+between this and a full live-deploy proof. See `LIMITATIONS.md`.
+
+Everything under "Quick start" has been verified from a clean clone.
 
 ## Repo layout
 
@@ -165,7 +193,7 @@ injection/   the prompt-injection demo record and scenario
 job/         idempotent Cloud Run Job entrypoint (agentspine-backed)
 agentspine/  the shared spine this repo runs on
 infra/       gcloud deploy/teardown scripts, two-region, per-agent service accounts
-tests/       45 offline tests across every component above
+tests/       58 offline tests across every component above
 ```
 
 See `ARCHITECTURE.md` for what is wired and `LIMITATIONS.md` for the

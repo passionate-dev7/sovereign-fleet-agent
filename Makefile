@@ -30,7 +30,7 @@ job:
 
 red-green:
 	@echo "See LIMITATIONS.md 'Red/green verification' for the manual break/restore steps."
-	@echo "Run: make test  (should be GREEN, 45 passed)"
+	@echo "Run: make test  (should be GREEN, 58 passed)"
 
 deploy:
 	@test -n "$(PROJECT_ID)" || { echo "usage: make deploy PROJECT_ID=<gcp-project>"; exit 1; }

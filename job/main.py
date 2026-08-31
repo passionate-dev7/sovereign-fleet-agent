@@ -8,16 +8,20 @@ run complete in the idempotency backend.
 
 Environment variables:
 
-    GOOGLE_API_KEY (or GEMINI_API_KEY)   REQUIRED. The allowed calls in the
-                                     batch invoke the real Gemini 3.5 Flash
-                                     summarizer tools. With no key set,
-                                     `agent.tools` raises
-                                     MissingModelCredentials naming the
-                                     variable; it never substitutes a
-                                     fabricated summary. For a model-free
-                                     run use `python demo.py` or
-                                     `python demo_local.py`, which name the
-                                     offline tool variants explicitly.
+    Model credentials, ONE of these two modes (see agent/tools.py):
+      GOOGLE_GENAI_USE_VERTEXAI=TRUE + GOOGLE_CLOUD_PROJECT (+ normally
+                                     GOOGLE_CLOUD_LOCATION)   Vertex AI mode,
+                                     via Application Default Credentials --
+                                     no API key. This is what the real
+                                     deploy sets (../../infra/deploy_sovereign.sh's
+                                     COMMON_ENV), matching Tabclose/Refill.
+      GOOGLE_API_KEY (or GEMINI_API_KEY)   Gemini Developer API mode, for a
+                                     local run with no GCP project handy.
+    The allowed calls in the batch invoke the real Gemini 2.5 Flash
+    summarizer tools. With neither mode configured, `agent.tools` raises
+    MissingModelCredentials naming what to set; it never substitutes a
+    fabricated summary. For a model-free run use `python demo.py` or
+    `python demo_local.py`, which name the offline tool variants explicitly.
 
     SOVEREIGN_BACKEND=local|gcp     default "local"
     SOVEREIGN_GCS_BUCKET            required if SOVEREIGN_BACKEND=gcp
@@ -26,6 +30,13 @@ Environment variables:
     SOVEREIGN_WINDOW                idempotency window_start (default a fixed string,
                                      NOT wall-clock time, so repeated invocations in the
                                      same demo window collapse onto the same run_id)
+    SOVEREIGN_TRACE_EXPORT=1        force-enable the Cloud Trace exporter even with
+                                     SOVEREIGN_BACKEND=local (see job/tracing_setup.py).
+                                     With SOVEREIGN_BACKEND=gcp (the real deploy's
+                                     setting) the exporter is enabled automatically;
+                                     if it cannot reach Cloud Trace (no ADC, API not
+                                     enabled) it fails closed to the existing no-op
+                                     behavior rather than crashing the job.
 """
 
 from __future__ import annotations
@@ -40,6 +51,7 @@ from audit.decision_log import DecisionLog
 from gateway.tool_gateway import DataRecord, ToolGateway
 from injection.injected_record import INJECTED_RECORD
 from job.tick import BatchCall, run_job_tick
+from job.tracing_setup import configure_cloud_trace
 from policy.engine import DEFAULT_ENGINE
 from registry.agent_registry import bootstrap_default_registry
 from registry.record_store import RecordStore
@@ -115,6 +127,12 @@ def demo_batch(record_store: RecordStore) -> list[BatchCall]:
 
 
 def main() -> int:
+    # Register the Cloud Trace exporter FIRST, before any span is opened
+    # (gateway.tool_gateway's spans start as soon as the fleet/batch run).
+    # No-ops when not in GCP mode; see job/tracing_setup.py.
+    trace_exported = configure_cloud_trace()
+    print(f"cloud_trace_exporter_registered={trace_exported}")
+
     registry = bootstrap_default_registry()
     decision_log = DecisionLog()
     gateway = ToolGateway(
