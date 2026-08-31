@@ -1,0 +1,26 @@
+[project]
+name = "sovereign"
+version = "0.1.0"
+description = "Sovereign: a data-residency policy gateway that vetoes cross-region sub-agent calls and proves each refusal in a hash-chained decision log."
+requires-python = ">=3.11"
+
+# Runtime + test dependencies. Pinned to the versions the offline suite is
+# verified against, so a clean clone cannot drift from what we tested.
+# `pip install -e .` installs all of these, which is what makes the README's
+# `make test`, `make demo`, and `make job` work on a fresh machine.
+dependencies = [
+    "google-adk==2.8.0",
+    "google-genai==2.20.0",
+    "google-cloud-firestore==2.29.0",
+    "google-cloud-storage==3.13.1",
+    "opentelemetry-api==1.42.1",
+    "opentelemetry-sdk==1.42.1",
+    "pytest==9.1.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["agentspine*", "policy*", "gateway*", "registry*", "audit*", "agent*", "injection*", "job*"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

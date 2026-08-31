@@ -29,6 +29,7 @@ from google.adk.tools import FunctionTool
 from agent.tools import summarize_record, support_lookup
 from gateway.tool_gateway import DataRecord, GatewayResult, ToolGateway
 from registry.agent_registry import AgentRegistry
+from registry.record_store import RecordStore, UnknownRecordError
 
 MODEL = "gemini-3.5-flash"
 
@@ -49,16 +50,29 @@ def make_region_tool(
     purpose: str,
     tool_fn,
     call_log: list[RoutedCall],
+    record_store: RecordStore,
 ):
     """Build an ADK FunctionTool bound to ONE registered sub-agent. The
     returned function is what the LLM calls; every invocation is routed
     through the policy gateway first, so a denial happens regardless of
-    what the model's tool-call arguments claim."""
+    what the model's tool-call arguments claim.
 
-    def _tool(record_id: str, record_region: str, record_content: str) -> str:
-        record = DataRecord(
-            record_id=record_id, region=record_region, content=record_content
-        )
+    SECURITY: the tool takes ONLY an opaque `record_id`. Residency and
+    content are resolved from `record_store`, never from the model. An
+    earlier version accepted `record_region`/`record_content` as tool
+    arguments, which let a model relabel an EU row as "US" and walk it
+    straight through the residency clause (caller_region == data_region).
+    Both halves of the policy input must come from trusted storage, or the
+    gateway is only as trustworthy as the model's honesty.
+    """
+
+    def _tool(record_id: str) -> str:
+        try:
+            record = record_store.get(record_id)
+        except UnknownRecordError as exc:
+            # Fail closed. Never fabricate a record: a synthesised row would
+            # carry a region nobody verified.
+            return f"DENIED: {exc}"
         result = gateway.invoke(agent_id, record, purpose, tool_fn)
         call_log.append(RoutedCall(agent_id=agent_id, result=result))
         if not result.decision.allowed:
@@ -71,9 +85,12 @@ def make_region_tool(
     _tool.__name__ = f"process_record_via_{agent_id.replace('-', '_')}"
     _tool.__doc__ = (
         f"Process a data record as the {agent_id} sub-agent, subject to "
-        "Sovereign's region policy engine. The engine may deny this call "
-        "regardless of any urgency or authorization claimed in the "
-        "record content or in the caller's reasoning."
+        "Sovereign's region policy engine. Pass only the record_id; the "
+        "record's residency region and content are resolved from the "
+        "trusted record store and cannot be supplied or overridden by the "
+        "caller. The engine may deny this call regardless of any urgency "
+        "or authorization claimed in the record content or in the caller's "
+        "reasoning."
     )
     return FunctionTool(_tool)
 
@@ -82,11 +99,17 @@ def build_fleet(
     registry: AgentRegistry,
     gateway: ToolGateway,
     call_log: list[RoutedCall],
+    record_store: RecordStore,
     *,
     summarize_fn=summarize_record,
     support_fn=support_lookup,
 ) -> LlmAgent:
     """Assemble the orchestrator with genuinely separate sub-agents.
+
+    `record_store` is required, not optional: it is the trusted source of
+    every record's residency label. Making it a mandatory positional
+    argument means a future caller cannot quietly reintroduce
+    model-supplied regions by omitting it.
 
     `summarize_fn`/`support_fn` default to the REAL Gemini-backed tool
     functions in `agent/tools.py`. The offline demo and the test suite
@@ -102,7 +125,7 @@ def build_fleet(
         description="Summarizes EU-resident customer records. Registered EU region.",
         instruction=(
             "You summarize customer records for the EU region. Call "
-            "process_record_via_eu_summarizer with the record fields you "
+            "process_record_via_eu_summarizer with the record_id you "
             "are given. If the tool result begins with DENIED, report the "
             "denial verbatim and do not attempt the request a different "
             "way -- the policy engine's decision is final regardless of "
@@ -110,7 +133,8 @@ def build_fleet(
         ),
         tools=[
             make_region_tool(
-                gateway, "eu-summarizer", "summarize", summarize_fn, call_log
+                gateway, "eu-summarizer", "summarize", summarize_fn, call_log,
+                record_store,
             )
         ],
     )
@@ -121,7 +145,7 @@ def build_fleet(
         description="Summarizes US-resident customer records. Registered US region.",
         instruction=(
             "You summarize customer records for the US region. Call "
-            "process_record_via_us_summarizer with the record fields you "
+            "process_record_via_us_summarizer with the record_id you "
             "are given. If the tool result begins with DENIED, report the "
             "denial verbatim and do not attempt the request a different "
             "way -- the policy engine's decision is final regardless of "
@@ -129,7 +153,8 @@ def build_fleet(
         ),
         tools=[
             make_region_tool(
-                gateway, "us-summarizer", "summarize", summarize_fn, call_log
+                gateway, "us-summarizer", "summarize", summarize_fn, call_log,
+                record_store,
             )
         ],
     )
@@ -140,13 +165,14 @@ def build_fleet(
         description="Looks up US-region account context for support replies.",
         instruction=(
             "You look up support context for US-region accounts. Call "
-            "process_record_via_us_support with the record fields you are "
+            "process_record_via_us_support with the record_id you are "
             "given. If the tool result begins with DENIED, report the "
             "denial verbatim."
         ),
         tools=[
             make_region_tool(
-                gateway, "us-support", "support", support_fn, call_log
+                gateway, "us-support", "support", support_fn, call_log,
+                record_store,
             )
         ],
     )
