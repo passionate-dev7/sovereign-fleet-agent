@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sovereign Architecture</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 1150px;
+    background: #0b0e14;
+    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    color: #e6e9ef;
+  }
+  .canvas {
+    position: relative;
+    width: 1150px;
+    height: 760px;
+    padding: 36px 40px 30px 40px;
+  }
+  .title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #f4f6fa;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #7b8496;
+    margin-top: 4px;
+    margin-bottom: 26px;
+  }
+  svg.connectors {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1150px;
+    height: 760px;
+    pointer-events: none;
+  }
+  .node {
+    position: absolute;
+    border-radius: 12px;
+    padding: 14px 18px;
+    border: 1.5px solid #2a3142;
+    background: linear-gradient(180deg, #151a24 0%, #10141c 100%);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  }
+  .node .label {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #f4f6fa;
+    letter-spacing: -0.005em;
+  }
+  .node .sub {
+    font-size: 11px;
+    color: #8992a3;
+    margin-top: 3px;
+    font-family: "SF Mono", "Menlo", monospace;
+  }
+
+  .subagent {
+    width: 178px;
+    text-align: center;
+  }
+  .subagent .label { color: #9fc4ff; }
+
+  #agent-eu   { top: 106px; left: 40px; }
+  #agent-us   { top: 106px; left: 245px; }
+  #agent-sup  { top: 106px; left: 450px; }
+
+  .gateway {
+    width: 300px;
+    top: 236px;
+    left: 195px;
+    text-align: center;
+    border-color: #3b4a6b;
+    background: linear-gradient(180deg, #182238 0%, #101828 100%);
+  }
+  .gateway .label { font-size: 16px; color: #ffffff; }
+  .gateway .sub { color: #8fb3ff; font-size: 12px; }
+
+  .row3 { top: 372px; width: 210px; }
+  #reg   { left: 30px; }
+  #pol   { left: 275px; width: 240px; text-align:center; border-color: #4a3a2a; background: linear-gradient(180deg,#241c12 0%,#181209 100%);}
+  #pol .label { color: #ffcf87; }
+  #log   { left: 555px; }
+
+  .verdict {
+    top: 502px;
+    width: 300px;
+    text-align: center;
+    border-width: 2px;
+  }
+  #deny {
+    left: 100px;
+    border-color: #7a2b34;
+    background: linear-gradient(180deg, #2a1216 0%, #1c0c0e 100%);
+  }
+  #deny .label { color: #ff8b96; font-size: 16px; }
+  #deny .sub { color: #d98a91; }
+
+  #allow {
+    left: 470px;
+    border-color: #2b6f4a;
+    background: linear-gradient(180deg, #0f2419 0%, #0b1811 100%);
+  }
+  #allow .label { color: #7be8a8; font-size: 16px; }
+  #allow .sub { color: #8fc9a4; }
+
+  .outcome {
+    top: 620px;
+    width: 300px;
+    text-align: center;
+    font-size: 12px;
+    padding: 12px 18px;
+  }
+  #deny-out { left: 100px; }
+  #deny-out .label { color: #f4f6fa; font-size: 13px; }
+  #allow-out { left: 470px; }
+  #allow-out .label { color: #f4f6fa; font-size: 13px; }
+
+  .side {
+    width: 260px;
+    top: 372px;
+    left: 850px;
+    text-align: left;
+    border-color: #3a2b52;
+    background: linear-gradient(180deg, #1c1430 0%, #120d1f 100%);
+  }
+  .side .label { color: #cbb2ff; font-size: 13px; }
+  .side .sub { color: #a893cf; }
+
+  .legend {
+    position: absolute;
+    top: 700px;
+    left: 40px;
+    font-size: 11.5px;
+    color: #6d7690;
+    display: flex;
+    gap: 22px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="title">Sovereign &mdash; enforcement path</div>
+  <div class="subtitle">Every tool call a sub-agent makes crosses this gateway before it can touch a record. There is no other path in.</div>
+
+  <svg class="connectors" viewBox="0 0 1150 760">
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#4a5470"/>
+      </marker>
+      <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#c05a63"/>
+      </marker>
+      <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#4fae7a"/>
+      </marker>
+    </defs>
+
+    <!-- sub-agents -> gateway -->
+    <path d="M129,166 L 320,236" stroke="#4a5470" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+    <path d="M334,166 L 345,236" stroke="#4a5470" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+    <path d="M539,166 L 375,236" stroke="#4a5470" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+
+    <!-- gateway -> registry/policy/log -->
+    <path d="M270,300 L 135,372" stroke="#4a5470" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+    <path d="M345,300 L 395,372" stroke="#4a5470" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+    <path d="M420,300 L 660,372" stroke="#4a5470" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+
+    <!-- policy -> deny / allow -->
+    <path d="M355,436 L 260,502" stroke="#c05a63" stroke-width="2.5" fill="none" marker-end="url(#arrowRed)"/>
+    <path d="M440,436 L 610,502" stroke="#4fae7a" stroke-width="2.5" fill="none" marker-end="url(#arrowGreen)"/>
+
+    <!-- deny/allow -> log (feedback) -->
+    <path d="M250,502 L 640,410" stroke="#5a4030" stroke-width="1.5" stroke-dasharray="4 4" fill="none" marker-end="url(#arrow)"/>
+    <path d="M620,502 L 665,436" stroke="#3a5a45" stroke-width="1.5" stroke-dasharray="4 4" fill="none" marker-end="url(#arrow)"/>
+
+    <!-- deny/allow -> outcome -->
+    <path d="M250,566 L 250,620" stroke="#c05a63" stroke-width="2" fill="none" marker-end="url(#arrowRed)"/>
+    <path d="M620,566 L 620,620" stroke="#4fae7a" stroke-width="2" fill="none" marker-end="url(#arrowGreen)"/>
+
+    <!-- log -> trace side -->
+    <path d="M800,404 L 850,412" stroke="#4a5470" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  </svg>
+
+  <div class="node subagent" id="agent-eu">
+    <div class="label">eu-summarizer</div>
+    <div class="sub">LlmAgent &middot; region: EU</div>
+  </div>
+  <div class="node subagent" id="agent-us">
+    <div class="label">us-summarizer</div>
+    <div class="sub">LlmAgent &middot; region: US</div>
+  </div>
+  <div class="node subagent" id="agent-sup">
+    <div class="label">us-support</div>
+    <div class="sub">LlmAgent &middot; region: US</div>
+  </div>
+
+  <div class="node gateway">
+    <div class="label">ToolGateway.invoke()</div>
+    <div class="sub">the single choke point &mdash; every tool call passes through here, no other path exists</div>
+  </div>
+
+  <div class="node row3" id="reg">
+    <div class="label">AgentRegistry</div>
+    <div class="sub">declared region + service account, fixed at registration</div>
+  </div>
+  <div class="node row3" id="pol">
+    <div class="label">PolicyEngine.evaluate()</div>
+    <div class="sub">pure function &middot; caller_region, data_region, purpose only &middot; fail-closed default</div>
+  </div>
+  <div class="node row3" id="log">
+    <div class="label">DecisionLog</div>
+    <div class="sub">hash-chained &middot; every verdict, allow or deny</div>
+  </div>
+
+  <div class="node verdict" id="deny">
+    <div class="label">DENY</div>
+    <div class="sub">SOV-001-RESIDENCY or fail-closed default</div>
+  </div>
+  <div class="node verdict" id="allow">
+    <div class="label">ALLOW</div>
+    <div class="sub">regions match, purpose permitted</div>
+  </div>
+
+  <div class="node outcome" id="deny-out">
+    <div class="label">tool_fn(record) never runs</div>
+    <div>record.content is never reached &mdash; not filtered, structurally unreachable</div>
+  </div>
+  <div class="node outcome" id="allow-out">
+    <div class="label">tool_fn(record) runs</div>
+    <div>OTel span opened first, then the sub-agent's own tool executes</div>
+  </div>
+
+  <div class="node side">
+    <div class="label">Cloud Trace</div>
+    <div class="sub">CloudTraceSpanExporter reads every decision span, live from the deployed Cloud Run Job container</div>
+  </div>
+
+  <div class="legend">
+    <span><span class="dot" style="background:#4a5470"></span>request path</span>
+    <span><span class="dot" style="background:#c05a63"></span>deny</span>
+    <span><span class="dot" style="background:#4fae7a"></span>allow</span>
+    <span><span class="dot" style="background:#5a4030"></span>logged either way</span>
+  </div>
+</div>
+</body>
+</html>
