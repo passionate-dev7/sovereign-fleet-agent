@@ -1,4 +1,4 @@
-# Architecture — Sovereign
+# Architecture: Sovereign
 
 ```mermaid
 flowchart LR
