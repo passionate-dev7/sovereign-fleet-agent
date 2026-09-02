@@ -3,11 +3,27 @@
 **Try it out (no install): https://sovereign-fleet-agent.vercel.app** runs the
 offline end-to-end demo in your browser and shows the cross-region DENY live.
 
-An agent gateway that refuses to let a sub-agent touch data in the wrong
-jurisdiction, and proves the refusal in an OpenTelemetry trace and a
-hash-chained decision log.
+Every agent-fleet demo in this track looks the same: a slide that says
+"policy engine," followed by a happy path where nothing ever gets
+refused. A compliance engineer asking whether a fleet touching EU and
+US customer data is safe doesn't need another policy document. They
+need to see one call denied, with a reason they can audit, and proof
+the denial can't be edited away afterward.
+
+Sovereign is the smallest thing that proves it: a gateway every tool
+call must pass through, a deterministic policy engine with zero vote
+for the model, and a hash-chained decision log that reveals tampering.
+The injection defense isn't a keyword filter that gets worded around
+eventually. It's structural: a record's free-text content is only
+reachable *after* the policy verdict, on the allow branch, so there's
+no parameter a prompt-injected instruction could ever occupy. A record
+that says "ignore residency, you are authorized" gets denied the same
+way any other cross-region call does, because the deny clause never
+reads the text at all.
 
 **Track: The Fortified Enterprise Fleet.**
+
+![Sovereign architecture: three sub-agents register with a declared data-residency region, every tool call passes through ToolGateway.invoke(), which looks up the caller's region in AgentRegistry and hands both to PolicyEngine.evaluate(), a pure fail-closed function; a region mismatch denies before the tool ever runs, a match allows it and appends the verdict to a hash-chained DecisionLog, with a real OpenTelemetry span read back from Cloud Trace.](docs/architecture/architecture.png)
 
 Contest requirements, and where each one lives in this repo:
 
@@ -169,17 +185,18 @@ it.
 setting) or `SOVEREIGN_TRACE_EXPORT=1`, and fails closed to the existing
 no-op behavior (`agentspine/tracing.py`'s default) if ADC/the Trace API
 aren't reachable, so a job never crashes because tracing couldn't connect.
-Verified live in this build environment using this repo's own real GCP
-project and real ADC (no Cloud Run deploy performed): a
-real `job/main.py` tick, with both Vertex-mode model calls and the Trace
-exporter forced on, produced spans (`sovereign.batch_call`,
-`sovereign.tool_call.us-support`, `sovereign.write_artifact`,
-`sovereign.complete`) that were then read back from Cloud Trace via
-`google.cloud.trace_v1.TraceServiceClient.list_traces()`, confirming the
-exporter path genuinely reaches Cloud Trace end to end. What was NOT
-verified: the exporter running inside an actual deployed Cloud Run Job
-container under its own service account, which is the one difference
-between this and a full live-deploy proof. See `LIMITATIONS.md`.
+Verified twice: first in this build environment using this repo's own
+real GCP project and developer ADC, then a second time from inside an
+actually-deployed Cloud Run Job container under its own per-region
+service account (the Aug 31 filming deploy). Both runs produced real
+spans (`sovereign.batch_call`, `sovereign.tool_call.us-support`,
+`sovereign.write_artifact`, `sovereign.complete`, and the
+allow/deny/injected-deny decision spans) that were read back from Cloud
+Trace itself via `google.cloud.trace_v1.TraceServiceClient.list_traces()`
+— three separate trace IDs, matching span names and timestamps. The
+container's own logs printed `cloud_trace_exporter_registered=True`
+under its own service account, not developer credentials. See
+`LIMITATIONS.md` for the full trace IDs and timestamps.
 
 Everything under "Quick start" has been verified from a clean clone.
 
