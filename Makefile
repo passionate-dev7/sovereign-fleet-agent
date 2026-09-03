@@ -29,7 +29,7 @@ job:
 	$(PY) -m job.main
 
 red-green:
-	@echo "See LIMITATIONS.md 'Red/green verification' for the manual break/restore steps."
+	@echo "Red/green: manually invert _cross_region_deny_clause in policy/engine.py, run tests (RED), restore (GREEN)."
 	@echo "Run: make test  (should be GREEN, 58 passed)"
 
 deploy:

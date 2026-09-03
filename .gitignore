@@ -22,3 +22,12 @@ service-account*.json
 # Committing one means a disabled validator shipped.
 *.demo-break-backup
 .vercel
+
+# Submission-prep meta docs (kept local, not part of the shipped project)
+SUBMISSION.md
+DEMO_SCRIPT.md
+DEVPOST_STORY.md
+DEVPOST_STORY_DRAFT.md
+RED_GREEN.md
+LIMITATIONS.md
+proof/devpost_story_live*.png

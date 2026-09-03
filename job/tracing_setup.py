@@ -6,8 +6,8 @@ Why this lives here and not in `agentspine/tracing.py`: that module is
 vendored byte-identical into all three submissions
 (`tests/test_no_vendored_spine.py` enforces this) and intentionally stays a
 thin, dependency-light, no-op-by-default helper for all three. Sovereign is
-the one project whose demo script narrates a Trace panel
-(`DEMO_SCRIPT.md`), so the GCP-specific exporter wiring -- and the extra
+the one project whose demo narrates a Trace panel
+, so the GCP-specific exporter wiring -- and the extra
 `opentelemetry-exporter-gcp-trace` dependency it requires -- is additive and
 local to this project's `job/`, not a change to the shared spine.
 
@@ -25,8 +25,7 @@ module was written and unit-tested (`tests/test_tracing_setup.py`) with a
 fake in-memory span exporter and by asserting the real `CloudTraceSpanExporter`
 is constructed when explicitly forced on, but no span was actually sent to
 a live Cloud Trace project from this environment -- there is no GCP project
-with billing/Trace API enabled available here to verify against. See
-`LIMITATIONS.md`.
+with billing/Trace API enabled available here to verify against.
 """
 
 from __future__ import annotations
@@ -78,7 +77,7 @@ def configure_cloud_trace(*, force: bool = False) -> bool:
     except ImportError:
         # opentelemetry-exporter-gcp-trace not installed. Stay a no-op
         # rather than crash the job -- this is the exact "clean local/
-        # offline run" property LIMITATIONS.md and the offline test suite
+        # offline run" property the offline test suite
         # depend on.
         return False
 

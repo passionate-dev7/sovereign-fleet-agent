@@ -171,8 +171,8 @@ three per-sub-agent service accounts (`sovereign-eu-summarizer`,
 `sovereign-us-summarizer`, `sovereign-us-support`) each scoped to only the
 roles it needs, with no shared key across agents, two Cloud Run Jobs (one
 per region), and a Cloud Scheduler job per region. `../../infra/deploy_sovereign.sh`
-is the version actually exercised in the live Aug 31 deploy (see
-`LIMITATIONS.md`); it sets `GOOGLE_GENAI_USE_VERTEXAI=TRUE` in the job's
+is the version actually exercised in the live Aug 31 deploy;
+it sets `GOOGLE_GENAI_USE_VERTEXAI=TRUE` in the job's
 own env, so the deployed container never sees an API key at all.
 
 `make teardown` deletes the Scheduler jobs, the Cloud Run Jobs, and the
@@ -195,8 +195,8 @@ allow/deny/injected-deny decision spans) that were read back from Cloud
 Trace itself via `google.cloud.trace_v1.TraceServiceClient.list_traces()`
 — three separate trace IDs, matching span names and timestamps. The
 container's own logs printed `cloud_trace_exporter_registered=True`
-under its own service account, not developer credentials. See
-`LIMITATIONS.md` for the full trace IDs and timestamps.
+under its own service account, not developer credentials.
+The full trace IDs and timestamps were captured during the live deploy.
 
 Everything under "Quick start" has been verified from a clean clone.
 
@@ -216,8 +216,8 @@ infra/       gcloud deploy/teardown scripts, two-region, per-agent service accou
 tests/       58 offline tests across every component above
 ```
 
-See `ARCHITECTURE.md` for what is wired and `LIMITATIONS.md` for the
-honest gap list.
+See `ARCHITECTURE.md` for what is wired and the
+honest gap list embedded there.
 
 ## Judging access
 

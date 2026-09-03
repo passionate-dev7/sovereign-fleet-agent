@@ -14,7 +14,7 @@ quality of its output. `demo_local.py` is the longer version of the same
 story with idempotency and tamper-detection acts; `job/main.py` is the
 production entrypoint and it binds the real Gemini-backed tools.
 
-Sequence, matching DEMO_SCRIPT.md:
+Sequence:
     1. Register the fleet (declared region + service account per sub-agent).
     2. Allowed call: EU record through EU summarizer.
     3. Denied call: same EU record through US summarizer.
